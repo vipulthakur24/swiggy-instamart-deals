@@ -1,7 +1,11 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const config = require('../config.json');
-const { fetchEssentialAisleDeals, fetchNoiceDeals } = require('./swiggyApi');
+const {
+  fetchEssentialAisleDeals,
+  fetchNoiceDeals,
+  fetchKeywordDeals
+} = require('./swiggyApi');
 const { findAlertWorthyDeals } = require('./dealTracker');
 const { sendBatchAlerts } = require('./notifier');
 
@@ -206,6 +210,7 @@ async function main() {
   let runPersonal = false;
   let runLifestyle = false;
   let runNoice = false;
+  let runKeywordHunter = false;
 
   if (mode === 'fresh' || mode === 'produce') {
     runFresh = true;
@@ -226,6 +231,8 @@ async function main() {
     runPersonal = true;
   } else if (mode === 'noice') {
     runNoice = true;
+  } else if (mode === 'keywordhunter') {
+    runKeywordHunter = true;
   } else {
     // Auto Mode:
     // Scheduled window: 9:01 AM to 12:01 AM IST
@@ -332,7 +339,62 @@ async function main() {
       timeString
     });
   }
+    // Keyword Deal Hunter
+  if (runKeywordHunter) {
+    const cfg = campaigns.keywordHunter || {};
 
+    if (cfg.enabled === false) {
+      console.log('[KeywordHunter] Disabled in config.json.');
+    } else {
+      const thresholds = cfg.thresholds || {
+        essentials: 55,
+        nonEssentials: 65
+      };
+
+      try {
+        const items = await fetchKeywordDeals(storeConfig, {
+          categories: cfg.categories,
+          thresholds
+        });
+
+        console.log(`[KeywordHunter] Scraped ${items.length} keyword results.`);
+
+                const essentialItems = items.filter(
+          item => item.dealType === 'essential'
+        );
+        const nonEssentialItems = items.filter(
+          item => item.dealType === 'nonEssential'
+        );
+
+        const essentialAlerts = findAlertWorthyDeals(
+          essentialItems,
+          Number(thresholds.essentials ?? 55),
+          'keywordHunter-essential',
+          { refreshCycle: 'daily' }
+        );
+
+        const nonEssentialAlerts = findAlertWorthyDeals(
+          nonEssentialItems,
+          Number(thresholds.nonEssentials ?? 65),
+          'keywordHunter-nonEssential',
+          { refreshCycle: 'daily' }
+        );
+
+        const alerts = [...essentialAlerts, ...nonEssentialAlerts];
+
+        console.log(`[KeywordHunter] Found ${alerts.length} alert-worthy deals.`);
+
+        if (bot && chatId && alerts.length > 0) {
+          await sendBatchAlerts(bot, chatId, alerts, {
+            timeString,
+            workerInfo: '🔎 Keyword Deal Hunter'
+          });
+        }
+      } catch (e) {
+        console.error('[KeywordHunter] Error:', e.message);
+      }
+    }
+  }
 
   // 5. The NOICE Store Scan
   if (runNoice) {
