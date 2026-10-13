@@ -2147,6 +2147,29 @@
           "isCollection": true,
           "category": "The NOICE Store"
         }
+            ,
+    "keywordHunter": {
+      "name": "Keyword Deal Hunter",
+      "enabled": true,
+      "thresholds": {
+        "essentials": 55,
+        "nonEssentials": 65
+      },
+      "categories": {
+        "essentials": [
+          "protein bar",
+          "protein wafer",
+          "shampoo",
+          "detergent"
+        ],
+        "nonEssentials": [
+          "loreal",
+          "nivea",
+          "himalaya",
+          "pantene"
+        ]
+      }
+    }
       ]
     }
   }
