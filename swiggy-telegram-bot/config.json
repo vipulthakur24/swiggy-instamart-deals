@@ -2146,7 +2146,9 @@
           "id": "290645",
           "isCollection": true,
           "category": "The NOICE Store"
-        },
+        }
+      ]
+    },
     "keywordHunter": {
       "name": "Keyword Deal Hunter",
       "enabled": true,
@@ -2168,8 +2170,6 @@
           "pantene"
         ]
       }
-    }
-      ]
-    }
+   }
   }
 }
